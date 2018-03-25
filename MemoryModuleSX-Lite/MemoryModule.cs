@@ -15,11 +15,6 @@ namespace MemoryModuleSX
         private MemoryModule(MEMORYMODULE internalModule) => _internalModule = internalModule;
 
         /// <summary>
-        /// Gets or sets the value that regards chars in dll/exe as unicode string
-        /// </summary>
-        public bool Unicode { get; set; }
-
-        /// <summary>
         /// Create an instance of the <see cref="MemoryModule"/>
         /// </summary>
         /// <param name="data">A pointer to dll/exe</param>
