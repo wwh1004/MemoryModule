@@ -3,21 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace MemoryModuleSX
+namespace MemoryModules
 {
     /// <summary>
     /// Load dll/exe from memory
     /// </summary>
     public unsafe class MemoryModule
     {
-        private MEMORYMODULE _internalModule;
+        private readonly MEMORYMODULE _internalModule;
 
         private MemoryModule(MEMORYMODULE internalModule) => _internalModule = internalModule;
-
-        /// <summary>
-        /// Gets or sets the value that regards chars in dll/exe as unicode string
-        /// </summary>
-        public bool Unicode { get; set; }
 
         /// <summary>
         /// Create an instance of the <see cref="MemoryModule"/>
@@ -35,10 +30,7 @@ namespace MemoryModuleSX
             MEMORYMODULE internalModule;
 
             internalModule = MemoryModuleC.MemoryLoadLibrary(data, (void*)size);
-            if (internalModule == null)
-                return null;
-            else
-                return new MemoryModule(internalModule);
+            return internalModule == null ? null : new MemoryModule(internalModule);
         }
 
         /// <summary>
@@ -60,23 +52,20 @@ namespace MemoryModuleSX
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public static MemoryModule Create(Stream stream)
-        {
-            return Create(StreamReadAllBytes(stream));
-        }
+        public static MemoryModule Create(Stream stream) => Create(StreamReadAllBytes(stream));
 
         private static byte[] StreamReadAllBytes(Stream stream)
         {
             if (!stream.CanRead)
                 throw new ArgumentException("Can't read the stream");
 
-            int length;
-            byte[] buffer;
-            List<byte> byteList;
-            int count;
-
             try
             {
+                int length;
+                byte[] buffer;
+                List<byte> byteList;
+                int count;
+
                 try
                 {
                     length = (int)stream.Length;
@@ -111,20 +100,14 @@ namespace MemoryModuleSX
         /// <summary>
         /// Free current instance of the <see cref="MemoryModule"/>
         /// </summary>
-        public void FreeLibrary()
-        {
-            MemoryModuleC.MemoryFreeLibrary(_internalModule);
-        }
+        public void FreeLibrary() => MemoryModuleC.MemoryFreeLibrary(_internalModule);
 
         /// <summary>
         /// Retrieves the address of an exported function from current instance of the <see cref="MemoryModule"/>
         /// </summary>
         /// <param name="functionName">The function name</param>
         /// <returns></returns>
-        public IntPtr GetProcAddress(string functionName)
-        {
-            return (IntPtr)MemoryModuleC.MemoryGetProcAddress(_internalModule, functionName);
-        }
+        public IntPtr GetProcAddress(string functionName) => (IntPtr)MemoryModuleC.MemoryGetProcAddress(_internalModule, functionName);
 
         /// <summary>
         /// Get the delegate of an exported function from current instance of the <see cref="MemoryModule"/>
@@ -132,18 +115,12 @@ namespace MemoryModuleSX
         /// <typeparam name="T"></typeparam>
         /// <param name="functionName">The function name</param>
         /// <returns></returns>
-        public T GetProcDelegate<T>(string functionName)
-        {
-            return (T)(object)Marshal.GetDelegateForFunctionPointer(GetProcAddress(functionName), typeof(T));
-        }
+        public T GetProcDelegate<T>(string functionName) => (T)(object)Marshal.GetDelegateForFunctionPointer(GetProcAddress(functionName), typeof(T));
 
         /// <summary>
         /// Call the entrypoint. Return -1 if error
         /// </summary>
         /// <returns></returns>
-        public int CallEntryPoint()
-        {
-            return MemoryModuleC.MemoryCallEntryPoint(_internalModule);
-        }
+        public int CallEntryPoint() => MemoryModuleC.MemoryCallEntryPoint(_internalModule);
     }
 }

@@ -34,9 +34,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using static MemoryModuleSX.NativeMethods;
+using static MemoryModules.NativeMethods;
 
-namespace MemoryModuleSX
+namespace MemoryModules
 {
     #region native
     internal unsafe delegate void* CustomAllocFunc(void* a, void* b, uint c, uint d, void* e);
@@ -105,52 +105,9 @@ namespace MemoryModuleSX
     /// <summary>
     /// Original MemoryModule
     /// </summary>
-    public static unsafe class MemoryModuleC
+    internal static unsafe class MemoryModuleC
     {
         #region macro
-        private static readonly void* RT_STRING = MAKEINTRESOURCE(6);
-
-        private static void* _tcslen(void* str, bool unicode)
-        {
-            if (unicode)
-                return wcslen((char*)str);
-            else
-                return strlen((byte*)str);
-        }
-
-        private static int _tcstol(void* str, void** endPtr, int radix, bool unicode)
-        {
-            if (unicode)
-                return wcstol((char*)str, (char**)endPtr, radix);
-            else
-                return strtol((byte*)str, (byte**)endPtr, radix);
-        }
-
-#pragma warning disable IDE1006
-        private static int lstrlen(void* str, bool unicode)
-        {
-            if (unicode)
-                return lstrlenW((char*)str);
-            else
-                return lstrlenA((byte*)str);
-        }
-#pragma warning restore IDE1006
-
-        private static bool IS_INTRESOURCE(void* _r)
-        {
-            return (ulong)(_r) >> 16 == 0;
-        }
-
-        private static void* MAKEINTRESOURCE(uint i)
-        {
-            return (void*)i;
-        }
-
-        private static ushort LANGIDFROMLCID(uint lcid)
-        {
-            return (ushort)lcid;
-        }
-
         private static ushort LOWORD(void* l)
         {
             return (ushort)((ulong)l & 0xffff);
@@ -192,14 +149,12 @@ namespace MemoryModuleSX
         }
         #endregion
 
-        private const ushort DEFAULT_LANGUAGE = 0;
-
         private static readonly bool WIN64 = IntPtr.Size == 8;
 
         private static readonly ushort HOST_MACHINE = WIN64 ? IMAGE_FILE_MACHINE_AMD64 : IMAGE_FILE_MACHINE_I386;
 
         // Protection flags for memory pages (Executable, Readable, Writeable)
-        private static uint[,,] ProtectionFlags = new uint[,,]
+        private static readonly uint[,,] ProtectionFlags = new uint[,,]
         {
             {
                 // not executable
@@ -886,248 +841,6 @@ namespace MemoryModuleSX
             }
 
             return module.exeEntry();
-        }
-
-        internal static void* MemoryFindResource(MEMORYMODULE module, string name, string type, bool unicode)
-        {
-            return MemoryFindResourceEx(module, name, type, DEFAULT_LANGUAGE, unicode);
-        }
-
-        private static IMAGE_RESOURCE_DIRECTORY_ENTRY* _MemorySearchResourceEntry(void* root, IMAGE_RESOURCE_DIRECTORY* resources, byte* key, bool unicode)
-        {
-            const uint MAX_LOCAL_KEY_LENGTH = 2048;
-            IMAGE_RESOURCE_DIRECTORY_ENTRY* entries = (IMAGE_RESOURCE_DIRECTORY_ENTRY*)(resources + 1);
-            IMAGE_RESOURCE_DIRECTORY_ENTRY* result = null;
-            uint start;
-            uint end;
-            uint middle;
-
-            if (!IS_INTRESOURCE(key) && key[0] == (byte)'#')
-            {
-                // special case: resource id given as string
-                byte* endpos = null;
-                int tmpkey = (ushort)_tcstol(&key[1], (void**)&endpos, 10, unicode);
-                if (tmpkey <= 0xffff && lstrlen(endpos, unicode) == 0)
-                    key = (byte*)MAKEINTRESOURCE((uint)tmpkey);
-            }
-
-            // entries are stored as ordered list of named entries,
-            // followed by an ordered list of id entries - we can do
-            // a binary search to find faster...
-            if (IS_INTRESOURCE(key))
-            {
-                ushort check = (ushort)(void*)key;
-                start = resources->NumberOfNamedEntries;
-                end = start + resources->NumberOfIdEntries;
-
-                while (end > start)
-                {
-                    ushort entryName;
-                    middle = (start + end) >> 1;
-                    entryName = (ushort)entries[middle].Name;
-                    if (check < entryName)
-                    {
-                        end = (end != middle ? middle : middle - 1);
-                    }
-                    else if (check > entryName)
-                    {
-                        start = (start != middle ? middle : middle + 1);
-                    }
-                    else
-                    {
-                        result = &entries[middle];
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                char* searchKey;
-                uint searchKeyLen = (uint)_tcslen(key, unicode);
-                char* _searchKey = null;
-                if (unicode)
-                    searchKey = (char*)key;
-                else
-                {
-                    // Resource names are always stored using 16bit characters, need to
-                    // convert string we search for.
-                    // In most cases resource names are short, so optimize for that by
-                    // using a pre-allocated array.
-                    char* _searchKeySpace;
-                    fixed (char* p = new char[MAX_LOCAL_KEY_LENGTH + 1])
-                        _searchKeySpace = p;
-                    if ((ulong)searchKeyLen > MAX_LOCAL_KEY_LENGTH)
-                    {
-                        void* _searchKeySize = (void*)(((ulong)searchKeyLen + 1) * sizeof(char));
-                        _searchKey = (char*)malloc(_searchKeySize);
-                        if (_searchKey == null)
-                            return null;
-                    }
-                    else
-                        _searchKey = _searchKeySpace;
-
-                    mbstowcs(_searchKey, key, (void*)searchKeyLen);
-                    _searchKey[searchKeyLen] = (char)0;
-                    searchKey = _searchKey;
-                }
-                start = 0;
-                end = resources->NumberOfNamedEntries;
-                while (end > start)
-                {
-                    int cmp;
-                    IMAGE_RESOURCE_DIR_STRING_U* resourceString;
-                    middle = (start + end) >> 1;
-                    resourceString = (IMAGE_RESOURCE_DIR_STRING_U*)OffsetPointer(root, (void*)(entries[middle].Name & 0x7FFFFFFF));
-                    cmp = _wcsnicmp(searchKey, resourceString->NameString, (void*)resourceString->Length);
-                    if (cmp == 0)
-                    {
-                        // Handle partial match
-                        if (searchKeyLen > resourceString->Length)
-                            cmp = 1;
-                        else if (searchKeyLen < resourceString->Length)
-                            cmp = -1;
-                    }
-                    if (cmp < 0)
-                        end = (middle != end ? middle : middle - 1);
-                    else if (cmp > 0)
-                        start = (middle != start ? middle : middle + 1);
-                    else
-                    {
-                        result = &entries[middle];
-                        break;
-                    }
-                }
-                if (!unicode)
-                    if (searchKeyLen > MAX_LOCAL_KEY_LENGTH)
-                        free(_searchKey);
-            }
-
-            return result;
-        }
-
-        internal static void* MemoryFindResourceEx(MEMORYMODULE module, string s_name, string s_type, ushort language, bool unicode)
-        {
-            byte* name;
-            byte* type;
-            if (unicode)
-            {
-                fixed (char* p = s_name.ToCharArray())
-                    name = (byte*)p;
-                fixed (char* p = s_type.ToCharArray())
-                    type = (byte*)p;
-            }
-            else
-            {
-                fixed (byte* p = Encoding.Convert(Encoding.Unicode, Encoding.ASCII, Encoding.Unicode.GetBytes(s_name)))
-                    name = p;
-                fixed (byte* p = Encoding.Convert(Encoding.Unicode, Encoding.ASCII, Encoding.Unicode.GetBytes(s_type)))
-                    type = p;
-            }
-            return MemoryFindResourceEx(module, name, type, language, unicode);
-        }
-
-        internal static void* MemoryFindResourceEx(MEMORYMODULE module, byte* name, byte* type, ushort language, bool unicode)
-        {
-            byte* codeBase = module.codeBase;
-            IMAGE_DATA_DIRECTORY* directory = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-            IMAGE_RESOURCE_DIRECTORY* rootResources;
-            IMAGE_RESOURCE_DIRECTORY* nameResources;
-            IMAGE_RESOURCE_DIRECTORY* typeResources;
-            IMAGE_RESOURCE_DIRECTORY_ENTRY* foundType;
-            IMAGE_RESOURCE_DIRECTORY_ENTRY* foundName;
-            IMAGE_RESOURCE_DIRECTORY_ENTRY* foundLanguage;
-            if (directory->Size == 0)
-                // no resource table found
-                return null;
-
-            if (language == DEFAULT_LANGUAGE)
-                // use language from current thread
-                language = LANGIDFROMLCID(GetThreadLocale());
-
-            // resources are stored as three-level tree
-            // - first node is the type
-            // - second node is the name
-            // - third node is the language
-            rootResources = (IMAGE_RESOURCE_DIRECTORY*)(codeBase + directory->VirtualAddress);
-            foundType = _MemorySearchResourceEntry(rootResources, rootResources, type, unicode);
-            if (foundType == null)
-                return null;
-
-            typeResources = (IMAGE_RESOURCE_DIRECTORY*)(codeBase + directory->VirtualAddress + (foundType->OffsetToData & 0x7fffffff));
-            foundName = _MemorySearchResourceEntry(rootResources, typeResources, name, unicode);
-            if (foundName == null)
-                return null;
-
-            nameResources = (IMAGE_RESOURCE_DIRECTORY*)(codeBase + directory->VirtualAddress + (foundName->OffsetToData & 0x7fffffff));
-            foundLanguage = _MemorySearchResourceEntry(rootResources, nameResources, (byte*)language, unicode);
-            if (foundLanguage == null)
-            {
-                // requested language not found, use first available
-                if (nameResources->NumberOfIdEntries == 0)
-                    return null;
-
-                foundLanguage = (IMAGE_RESOURCE_DIRECTORY_ENTRY*)(nameResources + 1);
-            }
-
-            return (codeBase + directory->VirtualAddress + (foundLanguage->OffsetToData & 0x7fffffff));
-        }
-
-        internal static uint MemorySizeofResource(MEMORYMODULE module, void* resource, bool unicode)
-        {
-            IMAGE_RESOURCE_DATA_ENTRY* entry;
-            entry = (IMAGE_RESOURCE_DATA_ENTRY*)resource;
-            if (entry == null)
-                return 0;
-
-            return entry->Size;
-        }
-
-        internal static void* MemoryLoadResource(MEMORYMODULE module, void* resource, bool unicode)
-        {
-            byte* codeBase = module.codeBase;
-            IMAGE_RESOURCE_DATA_ENTRY* entry = (IMAGE_RESOURCE_DATA_ENTRY*)resource;
-            if (entry == null)
-                return null;
-
-            return codeBase + entry->OffsetToData;
-        }
-
-        internal static int MemoryLoadString(MEMORYMODULE module, uint id, out string buffer, int maxsize, bool unicode)
-        {
-            return MemoryLoadStringEx(module, id, out buffer, maxsize, DEFAULT_LANGUAGE, unicode);
-        }
-
-        internal static int MemoryLoadStringEx(MEMORYMODULE module, uint id, out string buffer, int maxsize, ushort language, bool unicode)
-        {
-            buffer = null;
-            void* resource;
-            IMAGE_RESOURCE_DIR_STRING_U* data;
-            uint size;
-            if (maxsize == 0)
-                return 0;
-
-            char* _buffer;
-            fixed (char* p = new char[maxsize])
-                _buffer = p;
-            resource = MemoryFindResourceEx(module, (byte*)MAKEINTRESOURCE((id >> 4) + 1), (byte*)RT_STRING, language, unicode);
-            if (resource == null)
-                return 0;
-
-            data = (IMAGE_RESOURCE_DIR_STRING_U*)MemoryLoadResource(module, resource, unicode);
-            id = id & 0x0f;
-            while (id-- != 0)
-                data = (IMAGE_RESOURCE_DIR_STRING_U*)OffsetPointer(data, (void*)((data->Length + 1) * sizeof(char)));
-            if (data->Length == 0)
-                return 0;
-
-            size = data->Length;
-            if (size >= (uint)maxsize)
-                size = (uint)maxsize;
-            else
-                _buffer[size] = (char)0;
-            wcsncpy(_buffer, data->NameString, (void*)size);
-            buffer = new string(_buffer);
-            return (int)size;
         }
     }
 }

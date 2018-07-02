@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace MemoryModuleSX
+namespace MemoryModules
 {
     internal static unsafe class NativeMethods
     {
@@ -21,7 +21,6 @@ namespace MemoryModuleSX
         public const ushort IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16;
         public const uint IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
         public const uint IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
-        public const uint IMAGE_DIRECTORY_ENTRY_RESOURCE = 2;
         public const uint IMAGE_DIRECTORY_ENTRY_BASERELOC = 5;
         public const uint IMAGE_DIRECTORY_ENTRY_TLS = 9;
         public const ulong IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
@@ -262,40 +261,6 @@ namespace MemoryModuleSX
             public void* SizeOfZeroFill;
             public uint Characteristics;
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_RESOURCE_DIRECTORY_ENTRY
-        {
-            public uint Name;
-            public uint OffsetToData;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_RESOURCE_DIRECTORY
-        {
-            public uint Characteristics;
-            public uint TimeDateStamp;
-            public ushort MajorVersion;
-            public ushort MinorVersion;
-            public ushort NumberOfNamedEntries;
-            public ushort NumberOfIdEntries;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_RESOURCE_DATA_ENTRY
-        {
-            public uint OffsetToData;
-            public uint Size;
-            public uint CodePage;
-            public uint Reserved;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_RESOURCE_DIR_STRING_U
-        {
-            public ushort Length;
-            public fixed char NameString[1];
-        }
         #endregion
 
         #region delegate
@@ -315,20 +280,11 @@ namespace MemoryModuleSX
         public static extern void* GetProcAddress(void* hModule, byte* lpProcName);
 
         [DllImport("kernel32.dll")]
-        public static extern uint GetThreadLocale();
-
-        [DllImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool IsBadReadPtr(void* lp, void* ucb);
 
         [DllImport("kernel32.dll")]
         public static extern void* LoadLibraryA(byte* lpLibFileName);
-
-        [DllImport("kernel32.dll")]
-        public static extern int lstrlenA(byte* lpString);
-
-        [DllImport("kernel32.dll")]
-        public static extern int lstrlenW(char* lpString);
 
         [DllImport("kernel32.dll")]
         public static extern void* VirtualAlloc(void* lpAddress, void* dwSize, uint flAllocationType, uint flProtect);
@@ -342,16 +298,7 @@ namespace MemoryModuleSX
         public static extern bool VirtualProtect(void* lpAddress, void* dwSize, uint flNewProtect, uint* lpflOldProtect);
 
         [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int _wcsnicmp(char* _String1, char* _String2, void* _MaxCount);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void free(void* _Block);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void* malloc(void* _Size);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void* mbstowcs(char* _Dest, byte* _Source, void* _MaxCount);
 
         [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void* memcpy(void* _Dst, void* _Src, void* _Size);
@@ -364,21 +311,6 @@ namespace MemoryModuleSX
 
         [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int strcmp(byte* _Str1, byte* _Str2);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void* strlen(byte* _Str);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int strtol(byte* _String, byte** _EndPtr, int _Radix);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void* wcslen(char* _String);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern char* wcsncpy(char* _Destination, char* _Source, void* _Count);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int wcstol(char* _String, char** _EndPtr, int _Radix);
 #pragma warning restore IDE1006
         #endregion
     }
