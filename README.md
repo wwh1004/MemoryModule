@@ -1,4 +1,4 @@
-# MemoryModuleSX
+# MemoryModule
 Load dll/exe from memory. And it supports "AnyCPU" platform!
 
 Original code [MemoryModule](https://github.com/fancycode/MemoryModule) by fancycode.
