@@ -7,11 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryModule", "MemoryModul
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{BA53A42C-5BCA-48A9-9DDB-1C4841064A0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestLib", "Test\TestLib\TestLib.csproj", "{264E9C06-6ABA-4F37-9920-30FFA3452CC7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestLib", "Tests\TestLib\TestLib.csproj", "{264E9C06-6ABA-4F37-9920-30FFA3452CC7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test64", "Test\Test64\Test64.csproj", "{73ADEF99-F762-431E-A442-72ABD3C97987}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test64", "Tests\Test64\Test64.csproj", "{73ADEF99-F762-431E-A442-72ABD3C97987}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test32", "Test\Test32\Test32.csproj", "{82B4CFBC-31E1-4F78-B8FF-CF67628BD18F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test32", "Tests\Test32\Test32.csproj", "{82B4CFBC-31E1-4F78-B8FF-CF67628BD18F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
