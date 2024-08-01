@@ -65,7 +65,6 @@ namespace MemoryModules {
 			public ushort e_oeminfo;
 			public fixed ushort e_res2[10];
 			public uint e_lfanew;
-			public static readonly uint UnmanagedSize = (uint)Marshal.SizeOf(typeof(IMAGE_DOS_HEADER));
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -73,7 +72,6 @@ namespace MemoryModules {
 			public uint Signature;
 			public IMAGE_FILE_HEADER FileHeader;
 			public IMAGE_OPTIONAL_HEADER32 OptionalHeader;
-			public static readonly uint UnmanagedSize = (uint)Marshal.SizeOf(typeof(IMAGE_NT_HEADERS32));
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -81,7 +79,6 @@ namespace MemoryModules {
 			public uint Signature;
 			public IMAGE_FILE_HEADER FileHeader;
 			public IMAGE_OPTIONAL_HEADER64 OptionalHeader;
-			public static readonly uint UnmanagedSize = (uint)Marshal.SizeOf(typeof(IMAGE_NT_HEADERS64));
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -188,7 +185,6 @@ namespace MemoryModules {
 		public struct IMAGE_BASE_RELOCATION {
 			public uint VirtualAddress;
 			public uint SizeOfBlock;
-			public static readonly uint UnmanagedSize = (uint)Marshal.SizeOf(typeof(IMAGE_BASE_RELOCATION));
 		}
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -198,7 +194,6 @@ namespace MemoryModules {
 			public uint ForwarderChain;
 			public uint Name;
 			public uint FirstThunk;
-			public static readonly uint UnmanagedSize = (uint)Marshal.SizeOf(typeof(IMAGE_IMPORT_DESCRIPTOR));
 		}
 
 		[StructLayout(LayoutKind.Sequential)]

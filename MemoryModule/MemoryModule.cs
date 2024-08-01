@@ -117,7 +117,7 @@ namespace MemoryModules {
 		/// <param name="functionName">The function name</param>
 		/// <returns></returns>
 		public T GetProcDelegate<T>(string functionName) {
-			return (T)(object)Marshal.GetDelegateForFunctionPointer(GetProcAddress(functionName), typeof(T));
+			return MemoryModuleC.GetDelegateForFunctionPointer<T>(GetProcAddress(functionName));
 		}
 
 		/// <summary>

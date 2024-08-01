@@ -377,7 +377,7 @@ namespace MemoryModules {
 			callback = (void**)tls.AddressOfCallBacks;
 			if (callback != null) {
 				while (*callback != null) {
-					((IMAGE_TLS_CALLBACK)Marshal.GetDelegateForFunctionPointer((IntPtr)(*callback), typeof(IMAGE_TLS_CALLBACK)))((void*)codeBase, DLL_PROCESS_ATTACH, null);
+					GetDelegateForFunctionPointer<IMAGE_TLS_CALLBACK>((IntPtr)(*callback))((void*)codeBase, DLL_PROCESS_ATTACH, null);
 					callback++;
 				}
 			}
@@ -397,8 +397,8 @@ namespace MemoryModules {
 			for (; relocation->VirtualAddress > 0;) {
 				uint i;
 				byte* dest = codeBase + relocation->VirtualAddress;
-				ushort* relInfo = (ushort*)OffsetPointer(relocation, (void*)IMAGE_BASE_RELOCATION.UnmanagedSize);
-				for (i = 0; i < ((relocation->SizeOfBlock - IMAGE_BASE_RELOCATION.UnmanagedSize) / 2); i++, relInfo++) {
+				ushort* relInfo = (ushort*)OffsetPointer(relocation, (void*)sizeof(IMAGE_BASE_RELOCATION));
+				for (i = 0; i < ((relocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / 2); i++, relInfo++) {
 					// the upper 4 bits define the type of relocation
 					uint type = (uint)(*relInfo) >> 12;
 					// the lower 12 bits define the offset
@@ -442,7 +442,7 @@ namespace MemoryModules {
 			}
 
 			importDesc = (IMAGE_IMPORT_DESCRIPTOR*)(codeBase + directory->VirtualAddress);
-			for (; !IsBadReadPtr(importDesc, (void*)IMAGE_IMPORT_DESCRIPTOR.UnmanagedSize) && importDesc->Name != 0; importDesc++) {
+			for (; !IsBadReadPtr(importDesc, (void*)sizeof(IMAGE_IMPORT_DESCRIPTOR)) && importDesc->Name != 0; importDesc++) {
 				void** thunkRef;
 				void** funcRef;
 				void** tmp;
@@ -537,13 +537,13 @@ namespace MemoryModules {
 			void* alignedImageSize;
 			POINTER_LIST blockedMemory = null;
 
-			if (!CheckSize(size, (void*)IMAGE_DOS_HEADER.UnmanagedSize))
+			if (!CheckSize(size, (void*)sizeof(IMAGE_DOS_HEADER)))
 				return null;
 			dos_header = (IMAGE_DOS_HEADER*)data;
 			if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
 				return null;
 
-			if (!CheckSize(size, (void*)(dos_header->e_lfanew + (WIN64 ? IMAGE_NT_HEADERS64.UnmanagedSize : IMAGE_NT_HEADERS32.UnmanagedSize))))
+			if (!CheckSize(size, (void*)(dos_header->e_lfanew + (WIN64 ? sizeof(IMAGE_NT_HEADERS64) : sizeof(IMAGE_NT_HEADERS32)))))
 				return null;
 			old_header = &((byte*)data)[dos_header->e_lfanew];
 			if ((WIN64 ? ((IMAGE_NT_HEADERS64*)old_header)->Signature : ((IMAGE_NT_HEADERS32*)old_header)->Signature) != IMAGE_NT_SIGNATURE)
@@ -663,7 +663,7 @@ namespace MemoryModules {
 			// get entry point of loaded library
 			if ((WIN64 ? ((IMAGE_NT_HEADERS64*)result.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)result.headers)->OptionalHeader.AddressOfEntryPoint) != 0) {
 				if (result.isDLL) {
-					DllEntryProc DllEntry = (DllEntryProc)Marshal.GetDelegateForFunctionPointer((IntPtr)(code + (WIN64 ? ((IMAGE_NT_HEADERS64*)result.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)result.headers)->OptionalHeader.AddressOfEntryPoint)), typeof(DllEntryProc));
+					DllEntryProc DllEntry = GetDelegateForFunctionPointer<DllEntryProc>((IntPtr)(code + (WIN64 ? ((IMAGE_NT_HEADERS64*)result.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)result.headers)->OptionalHeader.AddressOfEntryPoint)));
 					// notify library about attaching to process
 					bool successfull = DllEntry(code, DLL_PROCESS_ATTACH, null);
 					if (!successfull)
@@ -671,7 +671,7 @@ namespace MemoryModules {
 					result.initialized = true;
 				}
 				else
-					result.exeEntry = (ExeEntryProc)Marshal.GetDelegateForFunctionPointer((IntPtr)(code + (WIN64 ? ((IMAGE_NT_HEADERS64*)result.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)result.headers)->OptionalHeader.AddressOfEntryPoint)), typeof(ExeEntryProc));
+					result.exeEntry = GetDelegateForFunctionPointer<ExeEntryProc>((IntPtr)(code + (WIN64 ? ((IMAGE_NT_HEADERS64*)result.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)result.headers)->OptionalHeader.AddressOfEntryPoint)));
 			}
 			else
 				result.exeEntry = null;
@@ -761,7 +761,7 @@ namespace MemoryModules {
 				return;
 			if (module.initialized) {
 				// notify library about detaching from process
-				DllEntryProc DllEntry = (DllEntryProc)Marshal.GetDelegateForFunctionPointer((IntPtr)(module.codeBase + (WIN64 ? ((IMAGE_NT_HEADERS64*)module.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)module.headers)->OptionalHeader.AddressOfEntryPoint)), typeof(DllEntryProc));
+				DllEntryProc DllEntry = GetDelegateForFunctionPointer<DllEntryProc>((IntPtr)(module.codeBase + (WIN64 ? ((IMAGE_NT_HEADERS64*)module.headers)->OptionalHeader.AddressOfEntryPoint : ((IMAGE_NT_HEADERS32*)module.headers)->OptionalHeader.AddressOfEntryPoint)));
 				DllEntry(module.codeBase, DLL_PROCESS_DETACH, null);
 			}
 
@@ -1011,6 +1011,14 @@ namespace MemoryModules {
 			wcsncpy(_buffer, data->NameString, (void*)size);
 			buffer = new string(_buffer);
 			return (int)size;
+		}
+
+		internal static T GetDelegateForFunctionPointer<T>(IntPtr ptr) {
+#if NET20
+			return (T)(object)Marshal.GetDelegateForFunctionPointer(ptr, typeof(T));
+#else
+			return Marshal.GetDelegateForFunctionPointer<T>(ptr);
+#endif
 		}
 	}
 }

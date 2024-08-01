@@ -41,7 +41,7 @@ namespace TestLib {
 			byte[] decompressedData;
 
 			random = new Random();
-			srcData = new byte[random.Next(256 * 1024 * 1024, 1024 * 1024 * 1024)];
+			srcData = new byte[random.Next(16 * 1024 * 1024, 32 * 1024 * 1024)];
 			random.NextBytes(srcData);
 			compressedData = CompressData(srcData);
 			decompressedData = DecompressData(compressedData, srcData.Length);

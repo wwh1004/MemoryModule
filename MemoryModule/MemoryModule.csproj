@@ -5,6 +5,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<NoWarn>CS1591</NoWarn>
+		<IsAotCompatible Condition="'$(TargetFramework)'=='net8.0'">true</IsAotCompatible>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Description>Library to load a DLL from memory.</Description>
